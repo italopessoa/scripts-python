@@ -3,7 +3,7 @@
 # Funcao para adicinaor e remover usuario do sistema - UFC
 # Italo Pessoa - italoneypessoa@gmail.com, 16 de Fevereiro de 2013
 
-# atualização 2.0, adicionar funcoes e estruturas no código para permitir que
+# atualizção 2.0, adicionar funcoes e estruturas no código para permitir que
 # sejam utilizadas as configurações de /etc/adduser.conf
 
 import getpass
@@ -188,7 +188,7 @@ def delUser(username):
 # username = nome do usuario
 # home = diretorio padrao do usuario
 # senha = senha do usuario
-def addUser(username,homeDir=None,user_pass=None):
+def addUser(username,homeDir=None,user_pass=None,shell=None):
 
 	# TODO os nomes podem ser substituidos por variaveis
 	# verificar se é utilizado regez para validar nome de usuario
@@ -204,7 +204,12 @@ def addUser(username,homeDir=None,user_pass=None):
 	# verificar se foi informado um caminho diferente
 	# do padrão para a home do usuario
 	if homeDir == None:
-		homeDir="/home/"+username
+		# verificar se existe um diretorio padrao para 
+		# criar o diretorio do usuario
+		if addUserProperties['DHOME'] != None:
+			homeDir=addUserProperties['DHOME']+'/'+username
+		else:
+			homeDir="root/home/"+usernameValidator
 
 	# criar grupo para o usuario e recuperar o id do grupo
 	gid=addGroup(username,uid)
@@ -315,8 +320,21 @@ def addUser(username,homeDir=None,user_pass=None):
 	if(other != ""):
 		numbers=numbers+","+other
 
+	# utilizar shel /bin/false para permitir que o usuário não tenha um shell
+	USER_SHELL='/bin/false'
+	# verificar se foi informado por parametro
+	if shell !=  None:
+		# se for informado ao adicionar deve ser utilizado
+		# o shell informado pelo usuario
+		USER_SHELL=shell
+	else:
+			# se nao for informado verificar se existe um shell padrao
+			if addUserProperties['DSHELL'] != None:
+				USER_SHELL=addUserProperties['DSHELL']
+
+
 	# salvar informacoes no passwd
-	passwd_file.write(username+":x:"+str(uid)+":"+str(gid)+":"+complete_name+","+numbers+":"+homeDir+":/bin/bash\n")
+	passwd_file.write(username+":x:"+str(uid)+":"+str(gid)+":"+complete_name+","+numbers+":"+homeDir+":"+USER_SHELL+"\n")
 
 	# fechar arquivo
 	passwd_file.close()
@@ -430,6 +448,9 @@ def main():
 			elif len(sys.argv) == 5:
 				# nao utilizar o modo iterativo, informando a senha
 				addUser(username=sys.argv[2],homeDir=sys.argv[3],user_pass=sys.argv[4])
+			elif len(sys.argv) == 6: # linha para ermitir adicionar o shell do usuario
+				# nao utilizar o modo iterativo, informando a senha, shell
+				addUser(username=sys.argv[2],homeDir=sys.argv[3],user_pass=sys.argv[4],shell=sys.argv[5])
 		# se a funcao for remover usuario
 		elif sys.argv[1] == 'del':
 			delUser(username=sys.argv[2])
